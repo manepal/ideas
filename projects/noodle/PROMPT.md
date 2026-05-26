@@ -1,0 +1,1 @@
+Read the spec at `/Users/maheshn/Work/ojastech/ideas/projects/noodle/SPEC.md` to understand what we're building. Then read the build plan at `/Users/maheshn/Work/ojastech/ideas/projects/noodle/BUILD_PLAN.md` and execute it step by step, verifying each step before moving to the next.
