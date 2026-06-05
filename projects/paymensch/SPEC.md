@@ -323,9 +323,17 @@ plans, subscriptions, invoices, invoice_items
 - Gateway credentials are encrypted at rest using AES-256-GCM with a per-environment key.
 - API keys are hashed (SHA-256) before storage. Only the prefix (`sk_live_` / `sk_test_`) and last 4 chars are shown after creation.
 
-## Subscription & Pricing (v2 — Not Built in v1)
+## Subscription & Billing (v2 — Works With BYOPG)
 
-### Tiers
+Billing is independent of the PSP license. Plans, invoices, proration, dunning, and subscription lifecycle run entirely within Paymensch. Payment capture happens through the merchant's existing BYOPG adapters — the same gateways they already use for one-time payments.
+
+```
+Subscription created → Invoice generated → Charge via eSewa/Khalti adapter → Money in merchant's gateway account
+```
+
+The billing engine doesn't know or care who owns the gateway credentials.
+
+### Tiers (Paymensch's Own Pricing)
 
 | Tier | Monthly Fee | Volume | What's Different |
 |------|------------|--------|-----------------|
