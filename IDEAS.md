@@ -136,3 +136,14 @@ Dark-humor management sim. Run a microbus route. Hire conductors who shout bette
 | 16 | Guff Drop | 3 · Stretch | Utility | Audio + geo-fencing |
 | 17 | Riff | 3 · Stretch | Game | Pitch detection |
 | 18 | Tempo Tycoon | 3 · Stretch | Game | Simulation engine |
+
+---
+
+## SaaS Ideas
+
+Full-stack B2B platforms. Longer build cycles (weeks, not weekends). Backend-heavy, multi-tenant, designed for the Nepali market.
+
+### 19. Paymensch
+Bring Your Own Payment Gateway (BYOPG) platform — merchants connect their existing eSewa, Khalti, Fonepay, and ConnectIPS accounts to a single API. Universal adapter model: add any gateway in any country by implementing one TypeScript interface. Unified dashboard with full audit trail, analytics, and gateway health monitoring. Monetized via monthly SaaS tiers (not per-transaction fees — avoids PSP licensing). Evolves into aggregated PSP settlement and Stripe-like billing/subscriptions for South Asia.
+- **Stack:** Node.js/TypeScript, Fastify API, Next.js dashboard, PostgreSQL + Redis + BullMQ monorepo, Prometheus + Grafana monitoring
+- **Why it works:** No unified BYOPG platform exists for Nepal's mid-market. Every business builds 4+ gateway integrations from scratch. India's equivalent (Juspay, Plural) is enterprise-only — no self-serve for the next 10,000 companies. BYOPG requires zero regulatory licensing since we never hold funds.
