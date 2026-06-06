@@ -25,6 +25,37 @@ You MUST use these skills at the appropriate times. Do NOT skip skill checks.
 - `superpowers:systematic-debugging` — before proposing any fix
 - Query `/graphify` — understand existing code before changing it
 
+### Skill Discovery (Ongoing)
+
+**The project's needs will grow faster than this skill list.** New domains (billing, PSP licensing, multi-country compliance, performance profiling, database optimization, incident response) will require new skills that don't exist yet or aren't listed here.
+
+**When to search for new skills:**
+
+| Trigger | Example |
+|---------|---------|
+| Starting a new domain area | Billing engine, PSP licensing, India expansion |
+| Encountering a problem with no obvious existing skill | Database query optimization, Redis memory profiling |
+| Before major architectural decisions | "Should we use Kafka instead of BullMQ?" |
+| A human says "is there a skill for..." | Just search for it |
+| At major version boundaries | Expo SDK 56, Fastify 6, Next.js 16 |
+
+**How to discover and install skills:**
+
+Use `find-skills` to search the skill marketplace. Be specific about what you need:
+
+```bash
+# Example invocations as the project grows:
+/find-skills "database migration tools for PostgreSQL"
+/find-skills "payment gateway integration testing"
+/find-skills "Kubernetes deployment automation"
+/find-skills "subscription billing engine"
+/find-skills "PCI compliance checklist"
+```
+
+**Rule:** If you're about to write 200+ lines of code in a domain no existing skill covers, search for a skill first. The skill may already exist and save hours of wheel-reinventing. If no skill is found, proceed without one — but document what you built so a future skill can replace it.
+
+Periodically (every ~5-10 features), review the installed skills against the current project needs. Remove unused skills. Update outdated ones.
+
 ## Tech Stack
 
 ### Backend (packages/api/)
@@ -743,11 +774,12 @@ Each stage is a standalone function with typed input/output. Testable in isolati
 
 When implementing any feature:
 
-1. Read relevant section of `docs/SPEC.md`
-2. Read relevant milestone in `docs/BUILD_PLAN.md`
-3. **Create tasks** for the milestone using TaskCreate (one per step)
-4. Query `/graphify` to understand existing code
-5. Create isolated worktree (`using-git-worktrees`)
+1. **Check for new skills** — `find-skills` for the domain you're about to work in
+2. Read relevant section of `docs/SPEC.md`
+3. Read relevant milestone in `docs/BUILD_PLAN.md`
+4. **Create tasks** for the milestone using TaskCreate (one per step)
+5. Query `/graphify` to understand existing code
+6. Create isolated worktree (`using-git-worktrees`)
 6. For each task in the milestone:
    - Write tests first (`test-driven-development`)
    - Implement until tests pass
