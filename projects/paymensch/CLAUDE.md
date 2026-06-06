@@ -17,9 +17,10 @@ You MUST use these skills at the appropriate times. Do NOT skip skill checks.
 - `superpowers:requesting-code-review` — before merging any branch
 - `security-review` — on all payment code, auth, and API key handling
 - `simplify` — after feature complete, before merge
-- `impeccable` — on dashboard UI components
-- `ui-ux-pro-max` — on dashboard UX decisions
+- `impeccable` — on dashboard UI components (reference `docs/BRAND.md`)
+- `ui-ux-pro-max` — on dashboard UX decisions (reference `docs/BRAND.md`)
 - `graphify` — after every feature commit to update knowledge graph
+- **ALWAYS read `docs/BRAND.md` before writing any UI code** — never use raw colors, fonts, or spacing
 
 ### When Stuck
 - `superpowers:systematic-debugging` — before proposing any fix
@@ -755,7 +756,8 @@ paymensch/
 ├── CLAUDE.md                     # This file
 ├── docs/
 │   ├── SPEC.md                   # Full product spec
-│   └── BUILD_PLAN.md             # Ordered implementation plan
+│   ├── BUILD_PLAN.md             # Ordered implementation plan
+│   └── BRAND.md                  # Design system and brand guide
 ├── packages/
 │   ├── shared/                   # @paymensch/shared
 │   │   └── src/
@@ -836,22 +838,23 @@ Each stage is a standalone function with typed input/output. Testable in isolati
 When implementing any feature:
 
 1. **Check for new skills** — `find-skills` for the domain you're about to work in
-2. Read relevant section of `docs/SPEC.md`
-3. Read relevant milestone in `docs/BUILD_PLAN.md`
-4. **Create tasks** for the milestone using TaskCreate (one per step)
-5. Query `/graphify` to understand existing code
-6. Create isolated worktree (`using-git-worktrees`)
-6. For each task in the milestone:
+2. Read `docs/BRAND.md` for design tokens — every color, font, and spacing value must reference a semantic token
+3. Read relevant section of `docs/SPEC.md`
+4. Read relevant milestone in `docs/BUILD_PLAN.md`
+5. **Create tasks** for the milestone using TaskCreate (one per step)
+6. Query `/graphify` to understand existing code
+7. Create isolated worktree (`using-git-worktrees`)
+8. For each task in the milestone:
    - Write tests first (`test-driven-development`)
    - Implement until tests pass
    - Mark task completed
-7. Run full test suite (`verification-before-completion`)
-8. Run `/graphify` to update knowledge graph
-9. **Present milestone summary** — what was built, how to test it
-10. **Wait for human sign-off** before next milestone
-11. After sign-off: request code review (`requesting-code-review`)
-12. Run security review on payment/auth code (`security-review`)
-13. Commit and merge (`finishing-a-development-branch`)
+9. Run full test suite (`verification-before-completion`)
+10. Run `/graphify` to update knowledge graph
+11. **Present milestone summary** — what was built, how to test it
+12. **Wait for human sign-off** before next milestone
+13. After sign-off: request code review (`requesting-code-review`)
+14. Run security review on payment/auth code (`security-review`)
+15. Commit and merge (`finishing-a-development-branch`)
 
 **Never skip the human gate between milestones.** Even if everything compiles and tests pass, the human tests the milestone before the next one starts.
 

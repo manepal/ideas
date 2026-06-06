@@ -13,6 +13,7 @@ mkdir -p docs
 cp /Users/maheshn/Work/ojastech/ideas/projects/paymensch/CLAUDE.md CLAUDE.md
 cp /Users/maheshn/Work/ojastech/ideas/projects/paymensch/SPEC.md docs/SPEC.md
 cp /Users/maheshn/Work/ojastech/ideas/projects/paymensch/BUILD_PLAN.md docs/BUILD_PLAN.md
+cp /Users/maheshn/Work/ojastech/ideas/projects/paymensch/BRAND.md docs/BRAND.md
 ```
 
 Then initialize graphify for knowledge graph:
@@ -24,7 +25,7 @@ Then initialize graphify for knowledge graph:
 
 ## Build
 
-Read `CLAUDE.md` first — it defines conventions, non-negotiable rules, and required skills. Then read the spec at `docs/SPEC.md` to understand what we're building. Then read the build plan at `docs/BUILD_PLAN.md` and execute it milestone by milestone.
+Read `CLAUDE.md` first — it defines conventions, non-negotiable rules, and required skills. Then read `docs/BRAND.md` for the design system — never use raw colors, fonts, or spacing values in any component. Then read the spec at `docs/SPEC.md` to understand what we're building. Then read the build plan at `docs/BUILD_PLAN.md` and execute it milestone by milestone.
 
 **Use relevant skills throughout.** Invoke any useful skills you have access to — especially `superpowers:test-driven-development` (EVERY feature starts with failing tests), `security-review` (all payment code), `impeccable` (dashboard UI), `ui-ux-pro-max` (UX decisions), and `graphify` (after every feature commit).
 
