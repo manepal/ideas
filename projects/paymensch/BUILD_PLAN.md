@@ -613,11 +613,154 @@ Run axe-core on every page. Fix all violations. Test keyboard navigation through
 
 ---
 
-## Milestone 6: Monitoring, Audit, Polish
+## Milestone 6: Marketing Site & Developer Docs
+
+**Goal:** Landing, pricing, blog. VitePress docs with auto-generated API reference. One command generates docs.
+
+### Step 6.1: Build marketing landing page
+
+**Create:** `packages/dashboard/src/app/(marketing)/page.tsx` — hero, value proposition, CTA, "How it works" section.
+
+### Step 6.2: Build pricing page
+
+**Create:** `packages/dashboard/src/app/(marketing)/pricing/page.tsx` — three tiers, feature comparison table, FAQ accordion.
+
+### Step 6.3: Build blog shell
+
+**Create:** `packages/dashboard/src/app/(marketing)/blog/page.tsx` — list of posts.
+**Create:** `packages/dashboard/src/app/(marketing)/blog/[slug]/page.tsx` — post detail, MDX support.
+
+### Step 6.4: Build about page
+
+**Create:** `packages/dashboard/src/app/(marketing)/about/page.tsx`
+
+### Step 6.5: Scaffold VitePress docs package
+
+```bash
+mkdir -p packages/docs && cd packages/docs && npm init -y
+npx vitepress init
+```
+
+**Create:** `packages/docs/package.json` — `@paymensch/docs`, depends on `@paymensch/shared`.
+
+### Step 6.6: Write quickstart guide
+
+**Create:** `packages/docs/src/quickstart.md` — 5-minute guide: get API key, make first payment, verify status.
+
+### Step 6.7: Set up OpenAPI auto-generation
+
+**Modify:** `packages/api/src/app.ts` — add `@fastify/swagger` and `@fastify/swagger-ui` plugins. Fastify auto-generates `openapi.json` from route schemas.
+
+**Create:** `packages/docs/scripts/generate-api-docs.ts` — fetches `openapi.json` from running API, generates VitePress pages.
+
+Add to root `package.json`:
+```json
+"docs:generate": "turbo docs:generate --filter=@paymensch/docs"
+```
+
+### Step 6.8: Write error code reference
+
+**Create:** `packages/docs/src/errors/index.md` — every error code with status, message, cause, resolution steps.
+
+### Step 6.9: Write gateway setup guides
+
+**Create:** `packages/docs/src/guides/esewa-setup.md`
+**Create:** `packages/docs/src/guides/khalti-setup.md`
+**Create:** `packages/docs/src/guides/fonepay-setup.md`
+**Create:** `packages/docs/src/guides/webhook-testing.md`
+**Create:** `packages/docs/src/guides/idempotency.md`
+
+### Step 6.10: Write SDK quickstarts
+
+**Create:** `packages/docs/src/sdks/node.md` — Node.js quickstart with code examples.
+**Create:** `packages/docs/src/sdks/python.md` — Python quickstart.
+
+### Step 6.11: Commit and present M6 summary
+
+**Milestone 6 complete.** Human test:
+```bash
+open http://localhost:3000          # Landing page
+open http://localhost:3000/pricing  # Pricing page
+open http://localhost:3000/blog     # Blog
+npm run docs:dev                    # Docs on localhost:5173
+```
+
+---
+
+## Milestone 7: Super Admin Dashboard
+
+**Goal:** Separate Next.js app for Paymensch staff. Merchant management, impersonation, revenue, feature flags, audit log viewer.
+
+### Step 7.1: Scaffold admin package
+
+```bash
+npx create-next-app@latest packages/admin --typescript --tailwind --app --src-dir
+```
+
+**Create:** `packages/admin/package.json` — `@paymensch/admin`, depends on `@paymensch/shared`.
+
+### Step 7.2: Create admins table and auth
+
+**Create:** `packages/api/src/db/migrations/007_create_admins.ts` — `admins` table with role, email, password_hash, totp_secret.
+**Create:** `packages/api/src/routes/admin-auth.ts` — separate login endpoint, separate JWT secret.
+**Create:** `packages/admin/src/lib/auth.ts` — admin auth client.
+
+### Step 7.3: Build admin login page
+
+**Create:** `packages/admin/src/app/login/page.tsx` — email + password + TOTP field (shown only if 2FA enabled).
+
+### Step 7.4: Build admin layout shell
+
+**Create:** `packages/admin/src/app/(authenticated)/layout.tsx` — sidebar nav, role-based menu visibility.
+
+### Step 7.5: Build Merchants page
+
+**Create:** `packages/admin/src/app/(authenticated)/merchants/page.tsx` — table with status/plan/date filters, approve/suspend/reactivate actions.
+**Create:** `packages/admin/src/app/(authenticated)/merchants/[id]/page.tsx` — detail: profile, gateways, transaction summary, activity timeline, impersonate button.
+
+### Step 7.6: Build impersonation flow
+
+**Create:** `packages/admin/src/app/(authenticated)/merchants/[id]/impersonate/route.ts` — generates a time-limited JWT scoped to the merchant, redirects to dashboard with token.
+
+### Step 7.7: Build Transactions page
+
+**Create:** `packages/admin/src/app/(authenticated)/transactions/page.tsx` — global transaction view, advanced filters, manual refund capability, anomaly flag.
+
+### Step 7.8: Build Revenue page
+
+**Create:** `packages/admin/src/app/(authenticated)/revenue/page.tsx` — MRR, ARR, churn, plan distribution, gateway usage, new signups trend. Charts via Recharts or Tremor.
+
+### Step 7.9: Build System Health page
+
+**Create:** `packages/admin/src/app/(authenticated)/system-health/page.tsx` — gateway status (aggregated), queue depth/rate, DB pool, Redis memory, error trends.
+
+### Step 7.10: Build Audit Log page
+
+**Create:** `packages/admin/src/app/(authenticated)/audit-log/page.tsx` — filterable by merchant/entity/action/date, CSV/JSON export.
+
+### Step 7.11: Build Feature Flags page
+
+**Create:** `packages/admin/src/app/(authenticated)/settings/feature-flags/page.tsx` — toggle per merchant or globally, manage rollout %. Backend: `packages/api/src/services/feature-flags.ts`.
+
+### Step 7.12: Build admin settings
+
+**Create:** `packages/admin/src/app/(authenticated)/settings/page.tsx` — rate limit config, admin user management (add/remove/role change).
+
+### Step 7.13: Commit and present M7 summary
+
+**Milestone 7 complete.** Human test:
+```bash
+open http://localhost:4002          # Admin login
+# Login as super_admin → merchants list → impersonate a merchant → view all pages
+```
+
+---
+
+## Milestone 8: Monitoring, Audit, Polish
 
 **Goal:** Dashboards live, alerts fire, audit logs queryable, everything production-ready.
 
-### Step 6.1: Create Grafana dashboards as code
+### Step 8.1: Create Grafana dashboards as code
 
 **Create:** `monitoring/grafana-dashboards/payment-overview.json`
 **Create:** `monitoring/grafana-dashboards/gateway-health.json`
@@ -625,7 +768,7 @@ Run axe-core on every page. Fix all violations. Test keyboard navigation through
 **Create:** `monitoring/grafana-dashboards/queue-health.json`
 **Create:** `monitoring/grafana-dashboards/business-metrics.json`
 
-### Step 6.2: Create Prometheus datasource and alerting config
+### Step 8.2: Create Prometheus datasource and alerting config
 
 **Create:** `monitoring/grafana-datasources.yml`
 **Create:** `monitoring/prometheus-alerts.yml` — 5 alert rules from CLAUDE.md.
@@ -633,26 +776,25 @@ Run axe-core on every page. Fix all violations. Test keyboard navigation through
 **Create:** `monitoring/loki-config.yml`
 **Create:** `monitoring/promtail-config.yml`
 
-### Step 6.3: Implement audit log service
+### Step 8.3: Implement audit log service
 
 **Create:** `packages/api/src/services/audit.ts` — `auditLog()` function called inline within services.
 
 **Create:** `packages/api/src/__tests__/services/audit.test.ts` — verifies append-only, no UPDATE/DELETE works.
 
-### Step 6.4: Add Sentry integration
+### Step 8.4: Add Sentry integration
 
 **Create:** `packages/api/src/plugins/sentry.ts` — Fastify plugin, captures unhandled errors.
 
-### Step 6.5: Performance hardening
+### Step 8.5: Performance hardening
 
-- [ ] AI search timeout: if BullMQ job exceeds 30s, mark as failed with retry
 - [ ] Connection pooling: Knex pool min=2 max=20 idle timeout 10s
 - [ ] Redis connection pooling: ioredis with max retries
 - [ ] API response compression: Fastify compress plugin
-- [ ] Static asset caching: CDN headers for dashboard assets
+- [ ] Static asset caching: CDN headers for dashboard, docs, admin assets
 - [ ] Cold start <2 seconds
 
-### Step 6.6: Final test pass
+### Step 8.6: Final test pass
 
 - [ ] Full test suite: `npm test` — all packages, all tests pass
 - [ ] Full E2E suite: `npm run test:e2e` — Chromium + Firefox pass
@@ -660,12 +802,12 @@ Run axe-core on every page. Fix all violations. Test keyboard navigation through
 - [ ] `npm run setup` on fresh clone — one command, everything works
 - [ ] Grafana dashboards load at localhost:3001, show real metrics
 - [ ] No console warnings or errors
-- [ ] Accessibility audit passes
+- [ ] Accessibility audit passes on all sites
 - [ ] Never logs API keys or credentials at any log level
 
-### Step 6.7: Commit and present M6 summary
+### Step 8.7: Commit and present M8 summary
 
-**Milestone 6 complete.** Platform is production-ready.
+**Milestone 8 complete.** Platform is production-ready across all four sites.
 
 ---
 
@@ -730,24 +872,43 @@ paymensch/
 │   │       └── queue/
 │   │           └── jobs/
 │   │               └── webhook-delivery.ts
-│   └── dashboard/
+│   ├── dashboard/
+│   │   └── src/
+│   │       └── app/
+│   │           ├── (marketing)/
+│   │           │   ├── page.tsx (Landing)
+│   │           │   ├── pricing/
+│   │           │   ├── blog/
+│   │           │   └── about/
+│   │           ├── (auth)/
+│   │           │   └── login/
+│   │           └── (dashboard)/
+│   │               ├── page.tsx (Overview)
+│   │               ├── transactions/
+│   │               ├── gateways/
+│   │               ├── api-keys/
+│   │               ├── webhooks/
+│   │               └── settings/
+│   ├── docs/
+│   │   ├── src/
+│   │   │   ├── quickstart.md
+│   │   │   ├── api/
+│   │   │   ├── sdks/
+│   │   │   ├── guides/
+│   │   │   └── errors/
+│   │   └── scripts/
+│   │       └── generate-api-docs.ts
+│   └── admin/
 │       └── src/
-│           ├── app/
-│           │   ├── login/
-│           │   └── dashboard/
-│           │       ├── page.tsx (Overview)
-│           │       ├── transactions/
-│           │       ├── gateways/
-│           │       ├── api-keys/
-│           │       ├── webhooks/
-│           │       └── settings/
-│           ├── components/
-│           │   ├── TransactionTable.tsx
-│           │   ├── GatewayConfigForm.tsx
-│           │   └── APIKeyCard.tsx
-│           └── lib/
-│               ├── api-client.ts
-│               └── auth.ts
+│           └── app/
+│               ├── login/
+│               └── (authenticated)/
+│                   ├── merchants/
+│                   ├── transactions/
+│                   ├── revenue/
+│                   ├── system-health/
+│                   ├── audit-log/
+│                   └── settings/
 ├── test-utils/
 │   ├── factories.ts
 │   ├── mocks.ts
@@ -793,5 +954,7 @@ paymensch/
 | M3: Payment Pipeline | 3.1–3.12 | 10 |
 | M4: Remaining Gateways | 4.1–4.7 | 8 |
 | M5: Merchant Dashboard | 5.1–5.13 | 12 |
-| M6: Monitoring & Polish | 6.1–6.7 | 6 |
-| **Total** | **53 steps** | **~43 hours** |
+| M6: Marketing Site & Docs | 6.1–6.11 | 8 |
+| M7: Super Admin Dashboard | 7.1–7.13 | 10 |
+| M8: Monitoring & Polish | 8.1–8.7 | 6 |
+| **Total** | **80 steps** | **~61 hours** |

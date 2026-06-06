@@ -175,14 +175,18 @@ FONEPAY_SANDBOX_SECRET=test_secret_456
     "dev": "turbo dev",
     "dev:api": "turbo dev --filter=@paymensch/api",
     "dev:dashboard": "turbo dev --filter=@paymensch/dashboard",
+    "dev:docs": "turbo dev --filter=@paymensch/docs",
+    "dev:admin": "turbo dev --filter=@paymensch/admin",
     "build": "turbo build",
     "test": "turbo test",
     "test:api": "turbo test --filter=@paymensch/api",
     "test:dashboard": "turbo test --filter=@paymensch/dashboard",
+    "test:admin": "turbo test --filter=@paymensch/admin",
     "test:e2e": "playwright test",
     "db:migrate": "turbo db:migrate --filter=@paymensch/api",
     "db:migrate:test": "turbo db:migrate:test --filter=@paymensch/api",
     "db:seed": "turbo db:seed --filter=@paymensch/api",
+    "docs:generate": "turbo docs:generate --filter=@paymensch/docs",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "graphify": "graphify",
@@ -680,9 +684,27 @@ paymensch/
 │   │       ├── db/
 │   │       │   └── migrations/
 │   │       └── queue/
-│   └── dashboard/                # @paymensch/dashboard
+│   ├── dashboard/                # @paymensch/dashboard — merchants + marketing
+│   │   └── src/
+│   │       └── app/
+│   │           ├── (marketing)/   # Public: landing, pricing, blog
+│   │           ├── (auth)/        # Login, signup
+│   │           └── (dashboard)/   # Protected: merchant pages
+│   ├── docs/                      # @paymensch/docs — VitePress developer docs
+│   │   └── src/
+│   │       ├── quickstart.md
+│   │       ├── api/               # Auto-generated from OpenAPI spec
+│   │       ├── guides/
+│   │       └── errors/
+│   └── admin/                     # @paymensch/admin — super admin dashboard
 │       └── src/
 │           └── app/
+│               ├── merchants/
+│               ├── transactions/
+│               ├── revenue/
+│               ├── system-health/
+│               ├── audit-log/
+│               └── settings/
 ├── graphify-out/                 # Knowledge graph (auto-generated)
 ├── docker-compose.yml
 ├── turbo.json
@@ -739,6 +761,33 @@ When implementing any feature:
 13. Commit and merge (`finishing-a-development-branch`)
 
 **Never skip the human gate between milestones.** Even if everything compiles and tests pass, the human tests the milestone before the next one starts.
+
+## Deployment
+
+### Docker Compose (Dev + Prod)
+
+Same infrastructure definition. `docker-compose.yml` for all services. `docker-compose.prod.yml` for production overrides (resource limits, restart policies, actual TLS certs, proper secrets). No k8s day 1.
+
+**Dev:** `npm run infra:up` — everything starts with hot-reload.
+**Prod:** `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d`
+
+Reverse proxy: Traefik handles routing, TLS termination (Let's Encrypt), and IP restrictions.
+
+### k8s Migration Path
+
+Migrate when multi-server is needed (est. 12-18 months). Compose services map 1:1 to k8s resources. App code doesn't change.
+
+### Domain Map
+
+| Site | URL | Access |
+|------|-----|--------|
+| Marketing | paymensch.io | Public |
+| API | api.paymensch.io | Public (rate-limited) |
+| Docs | docs.paymensch.io | Public |
+| Merchant App | app.paymensch.io | Public (behind login) |
+| Super Admin | admin.paymensch.io | IP-restricted (office/VPN) |
+| Grafana | grafana.paymensch.io | IP-restricted |
+| Prometheus | prometheus.paymensch.io | IP-restricted |
 
 ## Domain Knowledge
 

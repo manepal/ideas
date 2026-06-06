@@ -384,6 +384,75 @@ The billing engine doesn't know or care who owns the gateway credentials.
 - Queue Health: BullMQ depth, processing rate, failed jobs
 - Business Metrics: active merchants, new signups, volume by plan tier
 
+## Sites & Packages
+
+Monorepo with five packages. Three sites, three audiences, one shared codebase.
+
+### Package Map
+
+| Package | Site | Audience | Framework |
+|---------|------|----------|-----------|
+| `packages/api` | api.paymensch.io | Machine clients | Fastify |
+| `packages/dashboard` | app.paymensch.io + paymensch.io | Merchants + public | Next.js |
+| `packages/admin` | admin.paymensch.io | Paymensch staff | Next.js |
+| `packages/docs` | docs.paymensch.io | Developers | VitePress |
+| `packages/shared` | (internal) | All packages | TypeScript |
+
+### Marketing Site (paymensch.io)
+
+Built into `packages/dashboard` as a public route group `(marketing)`. Same Next.js app, different layouts, no auth required.
+
+```
+paymensch.io/
+├── /              Landing — "One API for every payment gateway in South Asia"
+├── /pricing       Three tiers, feature comparison table, FAQ
+├── /docs          Links to docs.paymensch.io
+├── /blog          Content marketing (SEO), changelog posts
+├── /about         Team, mission, contact
+├── /login         Redirects to app.paymensch.io
+└── /signup        Merchant registration
+```
+
+### Developer Docs (docs.paymensch.io)
+
+Separate VitePress app in `packages/docs/`. Static, MDX-native, built-in search. No JS overhead for readers. API reference auto-generated from Fastify OpenAPI spec.
+
+```
+docs.paymensch.io/
+├── /                    Quickstart — first payment in 5 minutes
+├── /api/                Auto-generated from openapi.json
+│   ├── /payments
+│   ├── /refunds
+│   ├── /webhooks
+│   ├── /gateway-configs
+│   └── /api-keys
+├── /sdks/               Node.js, Python quickstart
+├── /guides/             Gateway setup, webhook testing, idempotency deep-dive
+├── /errors/             Every error code with resolution steps
+└── /changelog/          API version history, breaking changes, deprecations
+```
+
+API reference workflow: write route → Fastify OpenAPI plugin generates `openapi.json` → VitePress consumes it → reference pages auto-render. New endpoint = docs page appears automatically. No manual sync.
+
+### Super Admin Dashboard (admin.paymensch.io)
+
+Separate Next.js app in `packages/admin/`. Completely independent auth domain from merchant dashboard. Separate `admins` table with role-based access. **Not publicly accessible** — IP-restricted to office/VPN IP ranges via Traefik middleware.
+
+**Roles:** `super_admin` (full access), `support_agent` (read merchants, impersonate), `read_only` (view analytics).
+
+| Page | What It Shows |
+|------|---------------|
+| **Merchants** | List all, filter by status/plan/date, approve/suspend/reactivate, impersonate for support debugging |
+| **Merchant Detail** | Full profile, gateway configs, transaction summary, activity timeline, impersonation entry point |
+| **Transactions** | All transactions across all merchants, advanced filters, manual refund capability, flagged anomaly review |
+| **Revenue** | MRR, ARR, churn, revenue by plan tier, new signups over time, gateway usage distribution across install base |
+| **System Health** | Per-gateway status (aggregated), queue depth/processing rate, DB connection pool, Redis memory, error rate trends |
+| **Audit Log** | Complete append-only trail, filterable by merchant/entity/action/date range, CSV/JSON export for compliance |
+| **Feature Flags** | Toggle features per merchant or globally, manage rollout percentage |
+| **Settings** | Global rate limits, gateway-level config overrides, admin user management |
+
+**Auth:** Email + password + TOTP 2FA. Separate `admins` table. Separate JWT signing secret. No overlap with merchant auth.
+
 ## Dev Environment
 
 ### One Command
@@ -396,11 +465,71 @@ git clone <repo-url> && cd paymensch && cp .env.example .env && npm run setup
 ### npm Scripts
 ```
 setup, infra:up, infra:down, infra:restart, infra:logs, infra:status
-dev, dev:api, dev:dashboard, build
-test, test:api, test:dashboard, test:e2e
+dev, dev:api, dev:dashboard, dev:docs, dev:admin
+build, test, test:api, test:dashboard, test:e2e
 db:migrate, db:migrate:test, db:seed
-lint, typecheck, graphify
+lint, typecheck, graphify, docs:generate
 ```
+
+## Deployment
+
+### Docker Compose (Dev + Prod)
+
+Same infrastructure definition for both environments. Single `docker-compose.yml` with production overrides in `docker-compose.prod.yml`. No k8s day 1.
+
+```
+┌──────────────────────────────────────────────────┐
+│                 Docker Compose                    │
+│                                                   │
+│  ┌─────────┐ ┌───────────┐ ┌───────┐ ┌────────┐ │
+│  │   API   │ │    App     │ │ Docs  │ │ Admin  │ │
+│  │  :4000  │ │   :3000   │ │ :5173 │ │ :4002  │ │
+│  └─────────┘ └───────────┘ └───────┘ └────────┘ │
+│  ┌──────────┐ ┌──────┐ ┌───────────────────────┐ │
+│  │PostgreSQL│ │Redis │ │Traefik (reverse proxy)│ │
+│  │  :5432   │ │:6379 │ │:80/:443 + auto TLS    │ │
+│  └──────────┘ └──────┘ └───────────────────────┘ │
+│  ┌──────────┐ ┌──────┐ ┌────────┐               │
+│  │Prometheus│ │Grafana│ │ Loki   │               │
+│  │  :9090   │ │:3001 │ │ :3100  │               │
+│  └──────────┘ └──────┘ └────────┘               │
+└──────────────────────────────────────────────────┘
+```
+
+**Dev:** `npm run infra:up` — builds and starts everything locally, hot-reload on all services.
+
+**Prod:** `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d` — same services, production config (resource limits, restart policies, actual TLS certs via Traefik + Let's Encrypt, proper secrets from environment).
+
+**Why not k8s day 1:** For a pre-revenue product with zero customers, k8s costs 1-2 weeks of infra work before any payment code ships. Docker Compose gives real dev/prod parity (same Postgres version, same Redis version, same network topology) without the YAML overhead or learning curve.
+
+### Kubernetes Migration Path (When Needed)
+
+Migrate when: multi-server deployment is required, zero-downtime deploys become revenue-critical, or auto-scaling is needed. Estimated trigger: 12-18 months post-launch.
+
+Migration is straightforward because Docker Compose services map 1:1 to k8s resources:
+
+| Compose | k8s |
+|---------|-----|
+| `services.api` | Deployment + Service + Ingress |
+| `services.postgres` | StatefulSet + PersistentVolumeClaim (or migrate to managed DB) |
+| `services.redis` | StatefulSet (or migrate to managed Redis) |
+| `services.traefik` | Ingress Controller |
+| `volumes` | PersistentVolume + PersistentVolumeClaim |
+| `networks` | NetworkPolicy + CNI |
+
+The app code doesn't change. Only the deployment layer.
+
+### Domain Map
+
+| Site | URL | Access |
+|------|-----|--------|
+| Marketing | paymensch.io | Public |
+| API | api.paymensch.io | Public (rate-limited) |
+| Docs | docs.paymensch.io | Public |
+| Merchant App | app.paymensch.io | Public (behind login) |
+| Super Admin | admin.paymensch.io | IP-restricted (office/VPN) |
+| Grafana | grafana.paymensch.io | IP-restricted |
+| Prometheus | prometheus.paymensch.io | IP-restricted |
 
 ## API Endpoints (v1)
 
@@ -443,7 +572,7 @@ Metrics:
 
 ## Build Milestones
 
-Built in 6 milestones, each fully testable before the next begins:
+Built in 8 milestones, each fully testable before the next begins:
 
 | # | Milestone | What You Can Do | ~Hours |
 |---|-----------|----------------|--------|
@@ -452,8 +581,10 @@ Built in 6 milestones, each fully testable before the next begins:
 | **M3** | Payment Pipeline (eSewa only) | Initiate → callback → verify → refund end-to-end with eSewa sandbox | 10 |
 | **M4** | Remaining Gateways + Webhooks | Khalti and Fonepay work identically, webhooks deliver to merchant URLs | 8 |
 | **M5** | Merchant Dashboard | Login, view transactions, configure gateways, manage API keys, see analytics | 12 |
-| **M6** | Monitoring, Audit, Polish | Dashboards live, alerts fire, audit logs queryable, accessibility passes | 6 |
-| **Total** | | | **~43 hours** |
+| **M6** | Marketing Site & Docs | Landing, pricing, blog, quickstart, auto-generated API reference, error code docs | 8 |
+| **M7** | Super Admin Dashboard | Merchant management, impersonation, revenue analytics, feature flags, audit log viewer | 10 |
+| **M8** | Monitoring, Audit, Polish | Dashboards live, alerts fire, accessibility passes, performance hardening | 6 |
+| **Total** | | | **~61 hours** |
 
 ## Verification
 
