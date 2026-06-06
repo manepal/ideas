@@ -174,6 +174,7 @@ Payment platforms are attack targets from day one. Every item on this list is a 
 1. **Conventional commits.** `feat:`, `fix:`, `test:`, `refactor:`, `docs:`, `chore:`
 2. **Never commit to main.** Work in feature branches or worktrees.
 3. **Commit after each BUILD_PLAN step.** Frequent, small commits.
+4. **No Co-Authored-By trailers.** Do NOT add `Co-Authored-By: Claude ...` to any commit message. Standard commits only.
 
 ## Development Environment
 
