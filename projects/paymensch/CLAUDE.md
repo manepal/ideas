@@ -95,12 +95,73 @@ Periodically (every ~5-10 features), review the installed skills against the cur
 3. **Gateway contract tests.** Every new gateway adapter passes the shared contract suite.
 4. **Every component has 6 states tested:** loading, loaded, empty, error, edge case, submitting.
 
-### Security
-1. **Never log API keys, credentials, or signatures.** Redact in logs and errors.
-2. **Amounts are integers (subunits).** Never floating point. Never.
-3. **Idempotency keys are enforced server-side.** Concurrent duplicate requests return identical results.
-4. **All gateway credentials are encrypted at rest.** Use node:crypto or a KMS.
-5. **Audit log is append-only.** No updates, no deletes. Immutable.
+### Security (Non-Negotiable)
+
+Payment platforms are attack targets from day one. Every item on this list is a hard requirement — no exceptions, no shortcuts, no "we'll add it later."
+
+#### Code-Level Security
+
+1. **Never log API keys, credentials, or signatures.** pino `redact` list covers `authorization`, `x-api-key`, `credentials`, `secret`, `signature`, `token`. Every new sensitive field extends the redact list. Test: `grep` your logs after a test run. If an API key appears, you failed.
+
+2. **Amounts are integers (subunits).** Never `float`, never `double`, never `Number` with decimal points. `1500.50 NPR` = `150050` in the database. Every arithmetic operation is integer math. Test: property-based testing with fast-check verifies round-trip conversion for any valid amount.
+
+3. **Idempotency keys are enforced server-side.** Not client-dependent. Not best-effort. Concurrent requests with the same key arrive at the same Redis lock. First one processes. Second one returns the cached result. Test: fire 10 concurrent requests with the same key, verify exactly 1 database row and 1 gateway call.
+
+4. **All gateway credentials are encrypted at rest.** AES-256-GCM with a key that never appears in code, config files, or `.env` committed to git. Encryption key is injected at runtime via environment variable or KMS. Test: query `gateway_configs` — `credentials` column must be unreadable ciphertext.
+
+5. **Audit log is append-only.** No UPDATE. No DELETE. No TRUNCATE. Database-level enforcement via `REVOKE UPDATE, DELETE, TRUNCATE ON audit_logs FROM app_user`. Test: attempt an UPDATE query — it must fail with a permission error.
+
+6. **Input validation on every endpoint.** Fastify JSON schemas define exact shapes. Unknown fields are stripped. Strings have max lengths. Integers have min/max. Enums have allowed values. No `additionalProperties: true` anywhere. Test: send extra fields, oversized strings, negative amounts — all rejected with 400.
+
+7. **SQL injection prevention.** Never string-interpolate user input into queries. Knex parameterized queries 100% of the time. Test: send `'; DROP TABLE merchants; --` as an email address — it's stored as a string, not executed.
+
+8. **XSS prevention.** Dashboard uses React (auto-escapes by default). API never returns raw HTML. CSP headers restrict script sources. Test: attempt to store `<script>alert(1)</script>` as a merchant name — it renders as text, not code.
+
+#### Infrastructure Security
+
+9. **Helmet headers on all responses.** `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 0`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security: max-age=31536000; includeSubDomains`. Fastify `@fastify/helmet` plugin.
+
+10. **CORS locked down.** Only `api.paymensch.io`, `app.paymensch.io`, `paymensch.io`, `docs.paymensch.io`, `admin.paymensch.io` in the allowlist. No wildcard. No `*`. Test: `curl -H "Origin: evil.com"` — response has no `Access-Control-Allow-Origin` header.
+
+11. **Rate limiting per IP and per merchant.** 100 req/min per merchant API key. 20 req/min per IP on login endpoint. 5 req/min on failed login attempts (brute force protection). Redis-backed counters. Test: fire 101 requests — 101st returns 429.
+
+12. **HTTPS only.** Traefik handles TLS termination with Let's Encrypt. HTTP requests are redirected to HTTPS (301). HSTS header set. Test: `curl http://api.paymensch.io` — returns 301 to HTTPS.
+
+13. **Docker images run as non-root.** Every `Dockerfile` has `USER node`. No `USER root`. Minimal base images (Alpine or distroless). No dev tools in production images. Test: `docker exec <container> whoami` — returns `node`, not `root`.
+
+14. **Secrets never in git.** `.env` is `.gitignore`'d. `.env.example` has placeholder values only (never real credentials). CI injects secrets from environment variables or a secrets manager. Pre-commit hook runs `gitleaks` or `trufflehog` to catch accidental secret commits. Test: `gitleaks detect --source .` in CI — fails the build if any secret is found.
+
+#### Runtime Security
+
+15. **JWT best practices.** Short-lived access tokens (15 min). Long-lived refresh tokens (7 days, stored hashed in DB, one per device). Refresh token rotation on use. Admin JWT signing secret is different from merchant JWT signing secret. Test: use a merchant JWT on an admin endpoint — 401.
+
+16. **2FA for admin accounts.** TOTP-based. Required for `super_admin` role. Optional for `support_agent`. Not available for `read_only`. Test: attempt admin login with 2FA enabled but no TOTP code — rejected.
+
+17. **Brute force protection on login.** 5 failed attempts → account locked for 15 minutes. Separate counter per IP and per email. Lock is enforced at the application level (not just Redis rate limit). Test: 6 rapid login attempts with wrong password — 6th returns 429 with "Account temporarily locked" message.
+
+18. **Session management.** Refresh tokens are single-use (rotate on use). Logout invalidates the refresh token. Password change invalidates all refresh tokens for that account. Admin can force-logout all sessions for a merchant. Test: logout → attempt to use old refresh token → 401.
+
+19. **Webhook signature verification.** Every outgoing webhook includes `X-Paymensch-Signature` (HMAC-SHA256 of the payload body). Merchants can verify the payload came from us and wasn't tampered with. Incoming gateway callbacks are verified with the gateway's signature scheme before any state change. Test: POST a webhook with a forged signature — rejected with 401.
+
+20. **Error messages don't leak information.** Production errors return generic messages ("Invalid credentials", not "User not found" or "Password incorrect"). Stack traces never in production responses. Detailed errors only in logs. Test: attempt login with non-existent email — response is identical to wrong-password response.
+
+#### CI/CD Security
+
+21. **Dependency vulnerability scanning.** `npm audit` runs on every PR. Critical/High vulnerabilities block merge. CI runs daily `npm audit` on main and opens issues for new vulnerabilities. Dependabot or Renovate configured for automated patch PRs.
+
+22. **SAST (Static Analysis).** ESLint security plugin (`eslint-plugin-security`). TypeScript strict mode. No `any`, no `as` casts without validation. SonarQube or CodeQL if available in CI.
+
+23. **Container image scanning.** Trivy or Docker Scout scans images for known CVEs before push to registry. Critical CVEs block deploy.
+
+#### Human-Triggered Security Reviews
+
+24. **Full security review before every production deployment.** Run `security-review` skill. Peer reviews all auth code, payment code, credential handling code, and database migration code. No solo merges in these paths.
+
+25. **Penetration test before processing real payments.** Hire an external firm or use a bug bounty platform. Fix all Critical/High findings before going live.
+
+26. **Security.txt at `paymensch.io/.well-known/security.txt`.** Contact for security researchers. PGP key. Acknowledgment policy.
+
+27. **NRB compliance maintained.** Transaction logs retained 5+ years. Audit log is queryable and exportable. Cross-border payments require explicit NRB approval — never route to a foreign gateway without sign-off.
 
 ### Code Quality
 1. **One file = one responsibility.** If a file exceeds 300 lines, split it.
@@ -793,6 +854,36 @@ When implementing any feature:
 13. Commit and merge (`finishing-a-development-branch`)
 
 **Never skip the human gate between milestones.** Even if everything compiles and tests pass, the human tests the milestone before the next one starts.
+
+### Security Gates
+
+At the end of every milestone, the agent runs this checklist. Security is not a Phase 6 item — it's continuous:
+
+```bash
+# 1. Secrets check
+gitleaks detect --source . --no-git
+# Expected: no leaks found
+
+# 2. Dependency audit
+npm audit --audit-level=high
+# Expected: no critical or high vulnerabilities
+
+# 3. TypeScript strict
+npm run typecheck
+# Expected: no errors, no `any` escapes
+
+# 4. Security lint
+npm run lint  # includes eslint-plugin-security
+# Expected: no security warnings
+
+# 5. Log cleanliness check
+npm test && grep -r "sk_live_\|sk_test_\|secret" logs/ || true
+# Expected: NO matches. If any API key or secret appears in logs, FIX BEFORE CONTINUING.
+
+# 6. Container scan (if Docker images built)
+trivy image paymensch-api:latest
+# Expected: no critical CVEs
+```
 
 ## Deployment
 
