@@ -8,15 +8,17 @@ A catalog of weekend-scoped mobile app and game ideas. While some ideas draw fro
 
 ## Project File Anatomy
 
-Each elaborated idea has three files:
+Each elaborated idea has these files:
 
-| File | Purpose | Audience |
-|------|---------|----------|
-| `SPEC.md` | What to build — requirements, interactions, visuals, data flow | Human (design review) |
-| `BUILD_PLAN.md` | How to build it — ordered steps, exact files, verify-at-each-gate | Claude Code agent |
-| `PROMPT.md` | One-shot paste into Claude Code to kick off the build | Human (copy-paste) |
+| File | Purpose | Audience | Required |
+|------|---------|----------|----------|
+| `SPEC.md` | What to build — requirements, architecture, data model | Human (design review) | Always |
+| `BUILD_PLAN.md` | How to build it — ordered steps, verification gates | Claude Code agent | Always |
+| `PROMPT.md` | One-shot paste into Claude Code to launch build | Human (copy-paste) | Always |
+| `CLAUDE.md` | Agent conventions, skills, rules, workflow | Claude Code agent | SaaS projects |
+| `BRAND.md` | Design system — colors, typography, spacing, icons, tone | Claude Code agent | SaaS projects |
 
-The spec is for understanding. The build plan is for execution. The prompt is so you never retype instructions.
+The spec is for understanding. The build plan is for execution. The prompt is so you never retype instructions. For SaaS projects, CLAUDE.md and BRAND.md are copied into the project directory alongside the spec and build plan.
 
 ## Idea to Project Workflow
 
@@ -74,4 +76,16 @@ Build plans must follow these rules so agents can execute them without ambiguity
 
 ## Target Platform
 
-Mobile (iOS + Android) via Expo. All projects should work on both platforms unless an idea specifically requires platform-specific features.
+**Mobile:** iOS + Android via Expo. All projects should work on both platforms unless an idea specifically requires platform-specific features.
+
+**SaaS:** Web platforms with REST APIs. Defaults below unless an idea specifies otherwise.
+
+## SaaS Tech Stack Defaults
+
+- **API:** Node.js/TypeScript, Fastify, PostgreSQL, Redis
+- **Dashboard:** Next.js (App Router), Tailwind CSS, shadcn/ui
+- **Job queue / messaging:** BullMQ (Redis-backed)
+- **Auth:** API keys for machine clients, JWT + refresh tokens for dashboard
+- **Monorepo:** Turborepo with `packages/shared/`, `packages/api/`, `packages/dashboard/`
+- **Hosting:** Dockerized, Hetzner or DigitalOcean (Singapore region for low Nepal latency)
+- **AI coding agent:** Claude Code with relevant MCPs (GitHub, file system, etc.)
