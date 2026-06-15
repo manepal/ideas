@@ -147,3 +147,83 @@ Full-stack B2B platforms. Longer build cycles (weeks, not weekends). Backend-hea
 Bring Your Own Payment Gateway (BYOPG) platform — merchants connect their existing eSewa, Khalti, Fonepay, and ConnectIPS accounts to a single API. Universal adapter model: add any gateway in any country by implementing one TypeScript interface. Unified dashboard with full audit trail, analytics, and gateway health monitoring. Monetized via monthly SaaS tiers (not per-transaction fees — avoids PSP licensing). Evolves into aggregated PSP settlement and Stripe-like billing/subscriptions for South Asia.
 - **Stack:** Node.js/TypeScript, Fastify API, Next.js dashboard, PostgreSQL + Redis + BullMQ monorepo, Prometheus + Grafana monitoring
 - **Why it works:** No unified BYOPG platform exists for Nepal's mid-market. Every business builds 4+ gateway integrations from scratch. India's equivalent (Juspay, Plural) is enterprise-only — no self-serve for the next 10,000 companies. BYOPG requires zero regulatory licensing since we never hold funds.
+
+---
+
+## Money-Makers — Built to Earn First
+
+The earlier tiers optimize for delight and shippability. These optimize for revenue. Every idea here leads with a concrete way it makes money and is filtered for **low upfront maintenance**: on-device where possible, stateless where not, no funds-handling, no heavy ops, no subscription platform that needs a team to babysit. Markets are mixed — some global, some Nepal-specific.
+
+### Mobile — One-time Pro, Freemium & Ads (near-zero server cost)
+
+### 20. Receipt Vault *(Global)*
+Snap a receipt; on-device OCR pulls the total, date, and merchant. Tracks warranty windows and return deadlines, nags you before they lapse, and exports a clean CSV/PDF at tax time. Nothing leaves the phone.
+- **Stack:** React Native + on-device OCR (ML Kit / Apple Vision) + local storage + notifications
+- **Earns:** free up to ~15 receipts; one-time Pro unlock (~$8) for unlimited + export. Optional once-a-year tax-season nudge to convert stragglers.
+- **Why it works:** no backend means no recurring cost and no data-privacy liability — the #1 reason people distrust receipt apps. Maintenance is near zero.
+
+### 21. Label Lens *(Global)*
+Point the camera at any food or cosmetic label; it flags allergens, additives, or anything on your personal blacklist (gluten, palm oil, parabens). Ingredient matching runs against a bundled on-device database.
+- **Stack:** React Native + OCR + on-device ingredient DB + family profiles
+- **Earns:** free 3 scans/day; Pro (one-time unlock or cheap subscription) for unlimited scans, custom blacklists, and per-family-member profiles.
+- **Why it works:** allergy and clean-eating audiences pay for peace of mind. The database ships with updates occasionally — no live infrastructure to run.
+
+### 22. Subscriptions Radar *(Global)*
+Log recurring charges (or forward receipt emails); get warned before a free trial converts and before an annual plan silently renews. No bank linking — manual entry plus email parsing only, which sidesteps the regulatory and maintenance load of Plaid-style integrations.
+- **Stack:** React Native + local storage + notifications + optional email-receipt parsing
+- **Earns:** free up to 3 subscriptions; one-time Pro for unlimited + price-hike alerts + a shared household view.
+- **Why it works:** "I forgot to cancel" is a universal, painful, recurring moment. No bank API = foolproof and cheap to run.
+
+### 23. Sun Rate *(Nepal)*
+Daily gold, silver, and forex rates with a genuinely clean calculator: tola↔gram, remittance value, "what's my NPR worth today." Existing rate sites are ad-choked and ugly.
+- **Stack:** React Native + one daily public rate fetch + local cache
+- **Earns:** a single tasteful banner ad + affiliate links to remittance services (IME, Western Union, Ria).
+- **Why it works:** millions check rates daily; nobody's shipped a clean, fast app for it. One scheduled fetch a day is the entire backend.
+
+### 24. Form Filler NP *(Nepal)*
+Guided, reusable templates for Nepal's most painful bureaucratic forms — passport, PAN, vehicle renewal, citizenship. Fill your details once; reuse across every form; export a print-ready PDF.
+- **Stack:** React Native + form templates (JSON) + local profile store + PDF export
+- **Earns:** free for the two most common forms; one-time Pro unlock for the full template library + unlimited saved profiles.
+- **Why it works:** everyone dreads these forms and the photocopy-shop "agents" who charge to fill them. Templates change rarely — maintenance is occasional, not constant.
+
+### Micro-SaaS & Tools (stateless or low-ops, recurring revenue)
+
+### 25. Frame Drop *(Global)*
+Drag in raw app screenshots; get App Store / Play Store / social-ready images — device frames, captions, every required resolution — in one export. A pure, stateless image pipeline.
+- **Stack:** Next.js + serverless image rendering (Satori / Sharp) + Stripe credits
+- **Earns:** pay-per-export credits or a cheap monthly tier. No user data to manage; scales to zero between uses.
+- **Why it works:** every indie dev hates the App Store screenshot ritual. Stateless = foolproof and near-zero idle cost.
+
+### 26. Status Page Lite *(Global)*
+A dead-simple hosted status page plus uptime pings, for indie devs who find Statuspage and BetterStack overkill and overpriced.
+- **Stack:** Next.js (static status pages) + a single cron pinger + PostgreSQL + Stripe
+- **Earns:** one monitored service free; low monthly tier for more checks + a custom domain.
+- **Why it works:** the low end of this market is underserved and price-sensitive. A cron job and static pages mean minimal ops and very low churn.
+
+### 27. Invoice Once *(Global / Nepal)*
+Generate clean, branded PDF invoices in the browser — logo, line items, tax presets (incl. Nepal's 13% VAT), and optional payment-reminder emails. No signup needed for a one-off invoice.
+- **Stack:** Next.js + serverless PDF generation + optional saved-client store + Stripe
+- **Earns:** free single invoices; one-time Pro or a cheap annual plan for saved clients, branding, and recurring invoices.
+- **Why it works:** freelancers everywhere hate invoicing and existing tools are bloated. Mostly stateless PDF generation — minimal storage, minimal ops.
+
+### 28. QR Menu *(Nepal / Global)*
+A restaurant uploads its menu once and gets a hosted QR-code menu page — no app to install, no POS integration, just a link and a printable QR.
+- **Stack:** Next.js (static menu pages) + image hosting + Stripe
+- **Earns:** one menu free; cheap annual per venue for multiple menus, photos, and custom branding.
+- **Why it works:** set-and-forget tools have famously low churn, and small restaurants won't touch complex POS suites. Static pages are trivial to operate at scale.
+
+---
+
+### Money-Makers Quick Reference
+
+| # | Idea | Type | Market | Monetization | Key Dependency |
+|---|------|------|--------|--------------|----------------|
+| 20 | Receipt Vault | Mobile utility | Global | One-time Pro | On-device OCR |
+| 21 | Label Lens | Mobile utility | Global | Freemium / Pro | On-device OCR + DB |
+| 22 | Subscriptions Radar | Mobile utility | Global | One-time Pro | Notifications |
+| 23 | Sun Rate | Mobile utility | Nepal | Ads + affiliate | Daily rate feed |
+| 24 | Form Filler NP | Mobile utility | Nepal | One-time Pro | PDF export |
+| 25 | Frame Drop | Micro-SaaS | Global | Credits / low sub | Image pipeline |
+| 26 | Status Page Lite | Micro-SaaS | Global | Low subscription | Cron + Postgres |
+| 27 | Invoice Once | Micro-SaaS | Global / Nepal | One-time / annual | PDF generation |
+| 28 | QR Menu | Micro-SaaS | Nepal / Global | Annual per venue | Static hosting |
